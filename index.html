@@ -77,6 +77,7 @@ const xp=earned(),levels=[['🌱 Primera estrella',0],['🌸 Estrella brillante'
 $('level').textContent=current[0];$('levelInfo').textContent=next?'Te faltan '+(next[1]-xp)+' puntos para '+next[0]:'¡Nivel máximo!';
 $('history').innerHTML=[...state.marks.map(m=>({day:m.day,label:'+'+m.points+' ⭐ · '+(state.tasks.find(t=>t.id===m.taskId)?.name||'Misión')})),...state.requests.map(r=>({day:r.day,label:(r.status==='approved'?'Canje':'Solicitud')+': '+r.name}))].sort((a,b)=>b.day.localeCompare(a.day)).slice(0,20).map(x=>'<div class="history"><div class="grow">'+safe(x.label)+'</div><span class="dim">'+safe(x.day)+'</span></div>').join('')||'<div class="empty">¡Tu aventura recién empieza!</div>';
 
+}
 save();render();
 })();
 </script>
