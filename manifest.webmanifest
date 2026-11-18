@@ -1,1 +1,9 @@
-{"name":"Juana Star World","short_name":"Juana ⭐","start_url":"./","display":"standalone","background_color":"#faf7ff","theme_color":"#f6e8ff","icons":[]}
+{
+  "name": "Juana Star World",
+  "short_name": "Juana ⭐",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fffaf4",
+  "theme_color": "#FF8A27",
+  "icons": []
+}
