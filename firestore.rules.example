@@ -1,0 +1,44 @@
+// Copiar en Firebase Console > Firestore > Rules. No contiene datos personales.
+// Los documentos access/UID deben crearse desde la consola por el adulto.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function allowed() {
+      return request.auth != null && exists(/databases/$(database)/documents/access/$(request.auth.uid));
+    }
+    function admin() {
+      return allowed() && get(/databases/$(database)/documents/access/$(request.auth.uid)).data.role == 'admin';
+    }
+    match /access/{uid} {
+      allow read: if allowed() && (request.auth.uid == uid || admin());
+      allow write: if false;
+    }
+    match /tasks/{id} {
+      allow read: if allowed();
+      allow write: if admin();
+    }
+    match /rewards/{id} {
+      allow read: if allowed();
+      allow write: if admin();
+    }
+    match /marks/{id} {
+      allow read: if allowed();
+      allow create: if allowed() && id == request.resource.data.day + '_' + request.resource.data.taskId
+        && request.resource.data.keys().hasOnly(['day','taskId','points','done','createdBy','createdAt'])
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.done == true
+        && request.resource.data.points is int
+        && request.resource.data.points >= 0 && request.resource.data.points <= 100;
+      allow update, delete: if admin();
+    }
+    match /redemptions/{id} {
+      allow read: if allowed();
+      allow create: if allowed()
+        && request.resource.data.keys().hasOnly(['rewardId','name','cost','status','requestedBy','createdAt'])
+        && request.resource.data.requestedBy == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.cost is int && request.resource.data.cost >= 1;
+      allow update, delete: if admin();
+    }
+  }
+}
