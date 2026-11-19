@@ -52,7 +52,7 @@
 <section id="missionsPanel"><div id="routineMessage" class="notice"></div><h2 class="section-title">🌷 Misiones diarias</h2><p class="subtitle">Las de cada día, con un máximo de 100 ⭐.</p><div class="card" id="tasks"></div><h2 class="section-title">✨ Misiones especiales</h2><p class="subtitle">Puntos extra que se suman por fuera del tope diario.</p><div class="card" id="specialTasks"></div><h2 class="section-title">🎁 Misiones sorpresa</h2><p class="subtitle">Desafíos especiales para divertirse, aprender y colaborar.</p><div class="card" id="surpriseTasks"></div></section>
 <section id="improvePanel" class="hide"><h2 class="section-title">🌱 A mejorar</h2><div class="card"><p class="subtitle">Un desafío es una oportunidad para intentarlo otra vez. ¡Nadie pierde estrellas!</p><div id="improveList"></div></div></section>
 <section id="rewardsPanel" class="hide"><h2 class="section-title">🎁 Mi tienda de estrellas</h2><div class="card" id="rewards"></div><h2 class="section-title">🎀 Club Sorpresa</h2><div class="card"><p class="subtitle">Premios que se pueden ganar sin gastar estrellas.</p><div id="surprises"></div></div></section>
-<section id="achievementsPanel" class="hide"><h2 class="section-title">🏆 Mis logros</h2><div class="card"><h3 id="level"></h3><div id="levelInfo" class="dim"></div><h3>Últimos movimientos</h3><div id="history"></div></div></section>
+<section id="achievementsPanel" class="hide"><h2 class="section-title">🏆 Mis logros</h2><div class="card"><h3 id="level"></h3><div id="levelInfo" class="dim"></div><h3>Últimos movimientos</h3><div id="history"></div><div style="margin-top:16px;padding-top:12px;border-top:1px solid #e9e2f1"><button id="backupProgress" class="btn small" type="button">💾 Guardar copia de mi progreso</button><p class="dim" style="font-size:12px;margin:6px 0 0">Descarga una copia de tus estrellas, misiones y premios. No cambia ningún dato.</p></div></div></section>
 
 </main></div>
 <nav id="nav" class="nav hide"><div class="nav-inner"><button data-tab="missionsPanel" class="active"><span>🌷</span>Misiones</button><button data-tab="improvePanel"><span>🌱</span>A mejorar</button><button data-tab="rewardsPanel"><span>🎁</span>Premios</button><button data-tab="achievementsPanel"><span>🏆</span>Logros</button></div></nav>
@@ -110,6 +110,15 @@ $('level').textContent=current[0];$('levelInfo').textContent=next?'Te faltan '+(
 $('history').innerHTML=[...state.marks.map(m=>({day:m.day,label:'+'+m.points+' ⭐ · '+(state.tasks.find(t=>t.id===m.taskId)?.name||'Misión')})),...state.requests.map(r=>({day:r.day,label:(r.status==='approved'?'Canje':'Solicitud')+': '+r.name}))].sort((a,b)=>b.day.localeCompare(a.day)).slice(0,20).map(x=>'<div class="history"><div class="grow">'+safe(x.label)+'</div><span class="dim">'+safe(x.day)+'</span></div>').join('')||'<div class="empty">¡Tu aventura recién empieza!</div>';
 
 }
+// Exportación de respaldo exclusivamente de lectura: nunca modifica el progreso.
+$('backupProgress').onclick=()=>{
+ const original=localStorage.getItem(key)||localStorage.getItem('juana-volley-quest-v1');
+ if(!original){alert('No encontramos datos guardados en este dispositivo. No se descargó ninguna copia.');return;}
+ let snapshot;try{snapshot=JSON.parse(original)}catch{alert('No se pudo leer el progreso. No se modificó nada.');return;}
+ if(!snapshot||!Array.isArray(snapshot.marks)||!Array.isArray(snapshot.tasks)){alert('No encontramos un progreso válido para respaldar.');return;}
+ const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='juana-progreso-respaldo-'+day()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+};
 save();render();
 })();
 </script>
