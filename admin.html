@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#f7edf9"><title>Juana Star World · Administrador</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(150deg,#fff5fa,#f1ebff);font:15px system-ui,-apple-system,Segoe UI,sans-serif;color:#383247}.wrap{max-width:690px;margin:auto;padding:18px 16px 50px}header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0 20px}h1{font-size:21px;margin:0}h2{font-size:17px;margin:4px 0 13px}.card{background:#fff;border:1px solid #eee3f5;border-radius:19px;padding:18px;margin:12px 0;box-shadow:0 5px 18px #5c31610a}.muted{color:#82798f;font-size:13px}.btn{border:0;border-radius:14px;padding:12px 17px;background:#8065ad;color:white;font:inherit;font-weight:700;cursor:pointer}.btn.ghost{background:#ede5f8;color:#5e477b}.hide{display:none!important}.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.stat{text-align:center;background:#f8f2fc;padding:13px 6px;border-radius:14px}.stat strong{display:block;font-size:20px}.stat small{font-size:11px;color:#82798f}.line{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid #f2edf7;align-items:center}.line:last-child{border:0}.tag{color:#7654aa;font-weight:700;font-size:12px}.tabs{display:flex;gap:7px;margin:15px 0}.tabs button{flex:1;border:0;background:#eee7f7;color:#5d5271;border-radius:12px;padding:11px 5px;font:inherit}.tabs button.active{background:#8065ad;color:white}.notice{background:#fff8df;border-radius:13px;padding:13px;font-size:13px;line-height:1.5}#error{color:#9d3460}.pill{background:#ecf9f2;color:#267458;padding:5px 9px;border-radius:20px;font-size:12px}a{color:#72579d}button:disabled{opacity:.6}
+</style></head><body><div class="wrap"><header><h1>⭐ Juana Star World</h1><button id="exit" class="btn ghost hide">Salir</button></header>
+<section id="intro" class="card"><h2>Espacio de administrador 💜</h2><p>Acá vas a poder consultar el progreso de Juana y revisar sus misiones y premios, sin alterar sus estrellas ni sus tareas realizadas.</p><p class="muted">El acceso está protegido con tu cuenta de Google y permisos de Firebase. No incluye botones para modificar el progreso.</p><button class="btn" id="enter">Entrar con Google</button><p id="error" role="alert"></p></section>
+<section id="workspace" class="hide"><div class="card"><h2>Progreso de Juana</h2><p class="muted" id="status">Comprobando acceso privado…</p><div class="stats"><div class="stat"><strong id="balance">—</strong><small>Disponibles</small></div><div class="stat"><strong id="earned">—</strong><small>Ganadas</small></div><div class="stat"><strong id="done">—</strong><small>Hechas hoy</small></div></div></div>
+<div class="tabs"><button class="active" data-page="progress">Progreso</button><button data-page="missions">Misiones</button><button data-page="prizes">Premios</button></div>
+<div id="progress" class="card"><h2>Actividad reciente</h2><div id="history" class="muted">Esperando datos…</div></div>
+<div id="missions" class="card hide"><h2>Misiones</h2><div id="taskList" class="muted">Esperando datos…</div></div>
+<div id="prizes" class="card hide"><h2>Premios</h2><div id="prizeList" class="muted">Esperando datos…</div></div>
+<div class="notice">🔒 Este acceso es de consulta. Los datos del celular de Juana no se cargan ni se reemplazan desde acá.</div>
+</section></div>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js';
+import {getAuth,GoogleAuthProvider,onAuthStateChanged,signInWithPopup,signOut} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js';
+import {getFirestore,doc,onSnapshot} from 'https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js';
+const config={apiKey:'AIzaSyCzs8DXsqWoJN0vixpuNmcvcFPyApYkKU4',authDomain:'juana-star-world.firebaseapp.com',projectId:'juana-star-world',storageBucket:'juana-star-world.firebasestorage.app',messagingSenderId:'859737626333',appId:'1:859737626333:web:c59bc619795dbe1194ed34'};
+const app=initializeApp(config),auth=getAuth(app),db=getFirestore(app),$=id=>document.getElementById(id);
+const safe=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let unsub=null;
+$('enter').onclick=async()=>{try{$('error').textContent='';await signInWithPopup(auth,new GoogleAuthProvider())}catch(e){$('error').textContent=e.code==='auth/unauthorized-domain'?'Falta autorizar oscarmartell.github.io en Firebase Authentication → Configuración → Dominios autorizados.':'No se pudo iniciar sesión: '+(e.message||e.code)}};
+$('exit').onclick=()=>signOut(auth);
+for(const button of document.querySelectorAll('[data-page]'))button.onclick=()=>{for(const b of document.querySelectorAll('[data-page]'))b.classList.toggle('active',b===button);for(const name of ['progress','missions','prizes'])$(name).classList.toggle('hide',name!==button.dataset.page)};
+function draw(s){
+const tasks=Array.isArray(s.tasks)?s.tasks:[],marks=Array.isArray(s.marks)?s.marks:[],requests=Array.isArray(s.requests)?s.requests:[],rewards=Array.isArray(s.rewards)?s.rewards:[];
+const today=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Argentina/Buenos_Aires',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+const earned=marks.reduce((sum,m)=>sum+(Number(m.points)||0),0),spent=requests.filter(r=>r.status==='approved').reduce((sum,r)=>sum+(Number(r.cost)||0),0);
+$('earned').textContent=earned+' ⭐';$('balance').textContent=(earned-spent)+' ⭐';$('done').textContent=marks.filter(m=>m.day===today).length;
+$('taskList').innerHTML=tasks.filter(t=>t.active!==false).map(t=>'<div class="line"><span>'+safe(t.emoji||'⭐')+' '+safe(t.name)+'</span><span class="tag">+'+safe(t.points)+' ⭐</span></div>').join('')||'Todavía no hay misiones sincronizadas.';
+$('prizeList').innerHTML=rewards.filter(r=>r.active!==false).map(r=>'<div class="line"><span>'+safe(r.emoji||'🎁')+' '+safe(r.name)+'</span><span class="tag">'+safe(r.cost)+' ⭐</span></div>').join('')||'Todavía no hay premios sincronizados.';
+const history=[...marks.map(m=>({day:m.day,label:'+'+m.points+' ⭐ · '+(tasks.find(t=>t.id===m.taskId)?.name||'Misión')})),...requests.map(r=>({day:r.day,label:(r.status==='approved'?'Canje':'Solicitud')+': '+r.name}))].sort((a,b)=>String(b.day).localeCompare(String(a.day))).slice(0,30);
+$('history').innerHTML=history.map(x=>'<div class="line"><span>'+safe(x.label)+'</span><small class="muted">'+safe(x.day)+'</small></div>').join('')||'Sin movimientos sincronizados todavía.';
+$('status').textContent='Actualizado automáticamente · Solo lectura';
+}
+onAuthStateChanged(auth,user=>{
+if(unsub){unsub();unsub=null}
+$('intro').classList.toggle('hide',!!user);$('workspace').classList.toggle('hide',!user);$('exit').classList.toggle('hide',!user);
+if(!user)return;
+$('status').textContent='Verificando permiso privado de administrador…';
+unsub=onSnapshot(doc(db,'juana','progress'),snap=>{if(snap.exists())draw(snap.data());else $('status').textContent='Acceso autorizado. Todavía falta importar de forma segura el progreso del celular de Juana.'},err=>{$('status').textContent=err.code==='permission-denied'?'Acceso restringido: falta configurar las reglas privadas de Firestore para tu cuenta.':'No se pudo leer el progreso: '+err.message});
+});
+</script></body></html>
